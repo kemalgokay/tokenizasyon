@@ -33,6 +33,10 @@ export class MatchingService {
     return market;
   }
 
+  listMarkets(): Market[] {
+    return [...this.markets.values()];
+  }
+
   pauseMarket(id: string, actor: ActorContext): Market {
     const market = this.getMarket(id);
     market.status = 'PAUSED';
@@ -101,6 +105,10 @@ export class MatchingService {
     return order;
   }
 
+  listOrders(marketId: string): Order[] {
+    return [...this.orders.values()].filter((order) => order.marketId === marketId);
+  }
+
   getTrade(id: string): Trade {
     const trade = this.trades.get(id);
     if (!trade) {
@@ -118,9 +126,17 @@ export class MatchingService {
     if (!book) {
       throw new NotFoundException('Order book not found');
     }
-    const bids = book.bids.slice(0, levels).map((id) => this.orders.get(id));
-    const asks = book.asks.slice(0, levels).map((id) => this.orders.get(id));
+    const bids = book.bids.slice(0, levels).map((id) => this.orders.get(id)).filter(Boolean) as Order[];
+    const asks = book.asks.slice(0, levels).map((id) => this.orders.get(id)).filter(Boolean) as Order[];
     return { bids, asks };
+  }
+
+  listAuditLog() {
+    return this.audit.list();
+  }
+
+  listOutboxEvents() {
+    return this.outbox.list();
   }
 
   private match(order: Order, market: Market): Trade[] {

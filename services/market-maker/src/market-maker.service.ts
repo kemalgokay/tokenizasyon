@@ -65,15 +65,19 @@ export class MarketMakerService {
     return config;
   }
 
+  getConfig(marketId: string): MMConfig {
+    return this.requireConfig(marketId);
+  }
+
   enable(marketId: string): MMConfig {
-    const config = this.getConfig(marketId);
+    const config = this.requireConfig(marketId);
     config.enabled = true;
     this.configs.set(marketId, config);
     return config;
   }
 
   disable(marketId: string): MMConfig {
-    const config = this.getConfig(marketId);
+    const config = this.requireConfig(marketId);
     config.enabled = false;
     this.configs.set(marketId, config);
     return config;
@@ -89,12 +93,27 @@ export class MarketMakerService {
     return tick;
   }
 
-  setRiskLimit(marketId: string, limit: MMRiskLimit): void {
+  setRiskLimit(marketId: string, limit: MMRiskLimit): MMRiskLimit {
     this.riskLimits.set(marketId, limit);
+    return limit;
+  }
+
+  getRiskLimit(marketId: string): MMRiskLimit | null {
+    return this.riskLimits.get(marketId) ?? null;
+  }
+
+  toggleKillSwitch(marketId: string, enabled: boolean): MMRiskLimit {
+    const existing = this.riskLimits.get(marketId);
+    if (!existing) {
+      throw new BadRequestException('Risk limit missing');
+    }
+    const updated = { ...existing, killSwitch: enabled };
+    this.riskLimits.set(marketId, updated);
+    return updated;
   }
 
   run(marketId: string, reason: MMRun['reason'], actor: ActorContext) {
-    const config = this.getConfig(marketId);
+    const config = this.requireConfig(marketId);
     if (!config.enabled || config.status !== 'ACTIVE') {
       throw new BadRequestException('Market maker disabled');
     }
@@ -121,7 +140,7 @@ export class MarketMakerService {
     };
     this.runs.set(run.id, run);
 
-    const inventory = this.getInventory(marketId, config.marketMakerId);
+    const inventory = this.requireInventory(marketId, config.marketMakerId);
     const quotes = this.buildQuotes(tick.midPrice, config, inventory);
     this.orders.set(marketId, quotes.map((quote) => ({ mmRunId: run.id, orderId: randomUUID(), level: quote.level, side: quote.side })));
 
@@ -136,7 +155,7 @@ export class MarketMakerService {
   }
 
   handleTrade(marketId: string, marketMakerId: string, side: 'BUY' | 'SELL', quantity: string, price: string): MMInventory {
-    const inventory = this.getInventory(marketId, marketMakerId);
+    const inventory = this.requireInventory(marketId, marketMakerId);
     const qty = toAmount(quantity);
     const priceValue = toAmount(price);
     const delta = side === 'BUY' ? qty : -qty;
@@ -154,13 +173,40 @@ export class MarketMakerService {
     return inventory;
   }
 
-  status(marketId: string, marketMakerId: string) {
+  status(marketId: string) {
+    const config = this.requireConfig(marketId);
     return {
-      config: this.getConfig(marketId),
-      inventory: this.getInventory(marketId, marketMakerId),
+      config,
+      inventory: this.requireInventory(marketId, config.marketMakerId),
       openOrders: this.orders.get(marketId) ?? [],
       lastRun: [...this.runs.values()].filter((run) => run.marketId === marketId).pop() ?? null,
+      riskLimit: this.getRiskLimit(marketId),
     };
+  }
+
+  listRuns(marketId: string): MMRun[] {
+    return [...this.runs.values()].filter((run) => run.marketId === marketId);
+  }
+
+  listOrders(marketId: string): MMOrderLink[] {
+    return this.orders.get(marketId) ?? [];
+  }
+
+  getInventory(marketId: string, marketMakerId: string): MMInventory {
+    return this.requireInventory(marketId, marketMakerId);
+  }
+
+  getInventoryForMarket(marketId: string): MMInventory {
+    const config = this.requireConfig(marketId);
+    return this.requireInventory(marketId, config.marketMakerId);
+  }
+
+  listAuditLog() {
+    return this.audit.list();
+  }
+
+  listOutboxEvents() {
+    return this.outbox.list();
   }
 
   cancelOrders(marketId: string): MMOrderLink[] {
@@ -197,7 +243,7 @@ export class MarketMakerService {
     return quotes;
   }
 
-  private getConfig(marketId: string): MMConfig {
+  private requireConfig(marketId: string): MMConfig {
     const config = this.configs.get(marketId);
     if (!config) {
       throw new BadRequestException('Config missing');
@@ -205,7 +251,7 @@ export class MarketMakerService {
     return config;
   }
 
-  private getInventory(marketId: string, marketMakerId: string): MMInventory {
+  private requireInventory(marketId: string, marketMakerId: string): MMInventory {
     const key = `${marketId}:${marketMakerId}`;
     const existing = this.inventory.get(key);
     if (existing) {

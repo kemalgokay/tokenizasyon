@@ -48,6 +48,10 @@ export class LifecycleService {
     return asset;
   }
 
+  listAssets(): Asset[] {
+    return [...this.assets.values()];
+  }
+
   submitAssetReview(id: string, actor: ActorContext): Asset {
     const asset = this.getAssetOrThrow(id);
     if (asset.status !== 'DRAFT') {
@@ -74,6 +78,10 @@ export class LifecycleService {
 
   getAsset(id: string): Asset {
     return this.getAssetOrThrow(id);
+  }
+
+  listTokens(): Token[] {
+    return [...this.tokens.values()];
   }
 
   createToken(input: { assetId: string; symbol: string; name: string; decimals: number; rules: TokenRules }, actor: ActorContext): Token {
@@ -122,6 +130,15 @@ export class LifecycleService {
       throw new NotFoundException('Token not found');
     }
     return token;
+  }
+
+  listPositions(tokenId: string): { holderId: string; balance: string }[] {
+    return [...this.positions.entries()]
+      .filter(([key]) => key.startsWith(`${tokenId}:`))
+      .map(([key, balance]) => ({
+        holderId: key.split(':')[1],
+        balance: fromAmount(balance),
+      }));
   }
 
   mint(tokenId: string, toHolderId: string, amount: string, actor: ActorContext): Token {
@@ -208,6 +225,16 @@ export class LifecycleService {
     this.whitelisted.set(`${tokenId}:${holderId}`, status);
   }
 
+  removeWhitelist(tokenId: string, holderId: string): void {
+    this.whitelisted.set(`${tokenId}:${holderId}`, 'INACTIVE');
+  }
+
+  listWhitelist(tokenId: string): { holderId: string; status: 'ACTIVE' | 'INACTIVE' }[] {
+    return [...this.whitelisted.entries()]
+      .filter(([key]) => key.startsWith(`${tokenId}:`))
+      .map(([key, status]) => ({ holderId: key.split(':')[1], status }));
+  }
+
   scheduleCorporateAction(tokenId: string, input: Omit<CorporateAction, 'id' | 'status' | 'tokenId'>, actor: ActorContext): CorporateAction {
     const token = this.getToken(tokenId);
     if (token.status !== 'ACTIVE') {
@@ -230,6 +257,10 @@ export class LifecycleService {
       after: action,
     });
     return action;
+  }
+
+  listCorporateActions(tokenId: string): CorporateAction[] {
+    return [...this.corporateActions.values()].filter((action) => action.tokenId === tokenId);
   }
 
   executeCorporateAction(id: string, actor: ActorContext): CorporateAction {
@@ -266,6 +297,10 @@ export class LifecycleService {
       throw new NotFoundException('Corporate action not found');
     }
     return action;
+  }
+
+  listRedemptions(tokenId: string): Redemption[] {
+    return [...this.redemptions.values()].filter((redemption) => redemption.tokenId === tokenId);
   }
 
   requestRedemption(tokenId: string, holderId: string, amount: string, actor: ActorContext): Redemption {
@@ -332,6 +367,14 @@ export class LifecycleService {
     redemption.status = 'REJECTED';
     this.redemptions.set(id, redemption);
     return redemption;
+  }
+
+  listAuditLog() {
+    return this.audit.list();
+  }
+
+  listOutboxEvents() {
+    return this.outbox.list();
   }
 
   getPosition(tokenId: string, holderId: string): string {
