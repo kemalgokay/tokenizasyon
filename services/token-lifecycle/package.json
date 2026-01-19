@@ -1,0 +1,7 @@
+{
+  "name": "@tokenizasyon/token-lifecycle",
+  "version": "0.1.0",
+  "main": "dist/services/token-lifecycle/main.js",
+  "types": "dist/services/token-lifecycle/main.d.ts",
+  "private": true
+}

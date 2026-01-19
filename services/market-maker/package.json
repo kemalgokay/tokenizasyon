@@ -1,0 +1,7 @@
+{
+  "name": "@tokenizasyon/market-maker",
+  "version": "0.1.0",
+  "main": "dist/services/market-maker/main.js",
+  "types": "dist/services/market-maker/main.d.ts",
+  "private": true
+}

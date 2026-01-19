@@ -1,0 +1,7 @@
+{
+  "name": "@tokenizasyon/trading-venue",
+  "version": "0.1.0",
+  "main": "dist/services/trading-venue/main.js",
+  "types": "dist/services/trading-venue/main.d.ts",
+  "private": true
+}
