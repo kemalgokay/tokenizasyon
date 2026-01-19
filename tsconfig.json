@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./libs/common" },
+    { "path": "./services/token-lifecycle" },
+    { "path": "./services/trading-venue" },
+    { "path": "./services/market-maker" }
+  ]
+}

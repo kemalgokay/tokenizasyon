@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: tokenizasyon
+      POSTGRES_PASSWORD: tokenizasyon
+      POSTGRES_DB: tokenizasyon
+    ports:
+      - "5432:5432"
+  token-lifecycle:
+    build: .
+    command: node dist/services/token-lifecycle/main.js
+    environment:
+      DATABASE_URL: postgres://tokenizasyon:tokenizasyon@postgres:5432/tokenizasyon
+      PORT: 3001
+    depends_on:
+      - postgres
+    ports:
+      - "3001:3001"
+  trading-venue:
+    build: .
+    command: node dist/services/trading-venue/main.js
+    environment:
+      DATABASE_URL: postgres://tokenizasyon:tokenizasyon@postgres:5432/tokenizasyon
+      PORT: 3002
+    depends_on:
+      - postgres
+    ports:
+      - "3002:3002"
+  market-maker:
+    build: .
+    command: node dist/services/market-maker/main.js
+    environment:
+      DATABASE_URL: postgres://tokenizasyon:tokenizasyon@postgres:5432/tokenizasyon
+      PORT: 3003
+    depends_on:
+      - postgres
+    ports:
+      - "3003:3003"
