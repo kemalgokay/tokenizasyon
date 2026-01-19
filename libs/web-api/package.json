@@ -1,0 +1,19 @@
+{
+  "name": "@tokenizasyon/web-api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "generate:token-lifecycle": "openapi --input http://localhost:3001/docs-json --output src/generated/token-lifecycle --client fetch",
+    "generate:trading-venue": "openapi --input http://localhost:3002/docs-json --output src/generated/trading-venue --client fetch",
+    "generate:market-maker": "openapi --input http://localhost:3003/docs-json --output src/generated/market-maker --client fetch",
+    "generate": "npm run generate:token-lifecycle && npm run generate:trading-venue && npm run generate:market-maker"
+  },
+  "dependencies": {
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "openapi-typescript-codegen": "^0.29.0"
+  }
+}

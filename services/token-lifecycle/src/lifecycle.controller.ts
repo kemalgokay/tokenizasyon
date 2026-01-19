@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { LifecycleService } from './lifecycle.service';
 import { Roles, RbacGuard } from '@tokenizasyon/common';
@@ -13,6 +13,12 @@ export class LifecycleController {
   @Roles('ISSUER', 'ADMIN')
   createAsset(@Body() body: any, @Req() req: any) {
     return this.lifecycle.createAsset(body, req.actor);
+  }
+
+  @Get('assets')
+  @Roles('AUDITOR', 'ADMIN', 'ISSUER', 'OPS')
+  listAssets() {
+    return this.lifecycle.listAssets();
   }
 
   @Post('assets/:id/submit-review')
@@ -43,6 +49,12 @@ export class LifecycleController {
   @Roles('ISSUER', 'ADMIN')
   createToken(@Body() body: any, @Req() req: any) {
     return this.lifecycle.createToken(body, req.actor);
+  }
+
+  @Get('tokens')
+  @Roles('AUDITOR', 'ADMIN', 'ISSUER', 'OPS')
+  listTokens() {
+    return this.lifecycle.listTokens();
   }
 
   @Post('tokens/:id/activate')
@@ -87,16 +99,52 @@ export class LifecycleController {
     return this.lifecycle.transfer(id, body.fromHolderId, body.toHolderId, body.amount, req.actor);
   }
 
+  @Get('tokens/:id/positions')
+  @Roles('AUDITOR', 'ADMIN', 'ISSUER', 'OPS', 'TRADER')
+  listPositions(@Param('id') id: string) {
+    return this.lifecycle.listPositions(id);
+  }
+
+  @Post('tokens/:id/whitelist')
+  @Roles('OPS', 'ADMIN')
+  addWhitelist(@Param('id') id: string, @Body() body: any) {
+    return this.lifecycle.addWhitelist(id, body.holderId, 'ACTIVE');
+  }
+
+  @Delete('tokens/:id/whitelist/:holderId')
+  @Roles('OPS', 'ADMIN')
+  removeWhitelist(@Param('id') id: string, @Param('holderId') holderId: string) {
+    return this.lifecycle.removeWhitelist(id, holderId);
+  }
+
+  @Get('tokens/:id/whitelist')
+  @Roles('AUDITOR', 'ADMIN', 'ISSUER', 'OPS')
+  listWhitelist(@Param('id') id: string) {
+    return this.lifecycle.listWhitelist(id);
+  }
+
   @Post('tokens/:id/corporate-actions')
   @Roles('OPS', 'ADMIN')
   scheduleCorporate(@Param('id') id: string, @Body() body: any, @Req() req: any) {
     return this.lifecycle.scheduleCorporateAction(id, body, req.actor);
   }
 
+  @Get('tokens/:id/corporate-actions')
+  @Roles('AUDITOR', 'ADMIN', 'OPS')
+  listCorporate(@Param('id') id: string) {
+    return this.lifecycle.listCorporateActions(id);
+  }
+
   @Post('corporate-actions/:id/execute')
   @Roles('OPS', 'ADMIN')
   executeCorporate(@Param('id') id: string, @Req() req: any) {
     return this.lifecycle.executeCorporateAction(id, req.actor);
+  }
+
+  @Post('tokens/:id/corporate-actions/:actionId/execute')
+  @Roles('OPS', 'ADMIN')
+  executeCorporateForToken(@Param('actionId') actionId: string, @Req() req: any) {
+    return this.lifecycle.executeCorporateAction(actionId, req.actor);
   }
 
   @Get('corporate-actions/:id')
@@ -111,10 +159,22 @@ export class LifecycleController {
     return this.lifecycle.requestRedemption(id, body.holderId, body.amount, req.actor);
   }
 
+  @Get('tokens/:id/redemptions')
+  @Roles('AUDITOR', 'ADMIN', 'OPS')
+  listRedemptions(@Param('id') id: string) {
+    return this.lifecycle.listRedemptions(id);
+  }
+
   @Post('redemptions/:id/approve')
   @Roles('OPS', 'ADMIN')
   approveRedemption(@Param('id') id: string, @Req() req: any) {
     return this.lifecycle.approveRedemption(id, req.actor);
+  }
+
+  @Post('tokens/:id/redemptions/:redemptionId/approve')
+  @Roles('OPS', 'ADMIN')
+  approveRedemptionForToken(@Param('redemptionId') redemptionId: string, @Req() req: any) {
+    return this.lifecycle.approveRedemption(redemptionId, req.actor);
   }
 
   @Post('redemptions/:id/settle')
@@ -123,9 +183,33 @@ export class LifecycleController {
     return this.lifecycle.settleRedemption(id, req.actor);
   }
 
+  @Post('tokens/:id/redemptions/:redemptionId/settle')
+  @Roles('OPS', 'ADMIN')
+  settleRedemptionForToken(@Param('redemptionId') redemptionId: string, @Req() req: any) {
+    return this.lifecycle.settleRedemption(redemptionId, req.actor);
+  }
+
   @Post('redemptions/:id/reject')
   @Roles('OPS', 'ADMIN')
   rejectRedemption(@Param('id') id: string, @Req() req: any) {
     return this.lifecycle.rejectRedemption(id, req.actor);
+  }
+
+  @Post('tokens/:id/redemptions/:redemptionId/reject')
+  @Roles('OPS', 'ADMIN')
+  rejectRedemptionForToken(@Param('redemptionId') redemptionId: string, @Req() req: any) {
+    return this.lifecycle.rejectRedemption(redemptionId, req.actor);
+  }
+
+  @Get('audit-log')
+  @Roles('AUDITOR', 'ADMIN', 'OPS')
+  listAuditLog() {
+    return this.lifecycle.listAuditLog();
+  }
+
+  @Get('outbox-events')
+  @Roles('AUDITOR', 'ADMIN', 'OPS')
+  listOutboxEvents() {
+    return this.lifecycle.listOutboxEvents();
   }
 }

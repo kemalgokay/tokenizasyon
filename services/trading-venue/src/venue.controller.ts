@@ -15,6 +15,12 @@ export class VenueController {
     return this.matching.createMarket(body.tokenId, req.actor);
   }
 
+  @Get('markets')
+  @Roles('TRADER', 'MARKET_MAKER', 'ADMIN', 'AUDITOR', 'OPS')
+  listMarkets() {
+    return this.matching.listMarkets();
+  }
+
   @Post('markets/:id/pause')
   @Roles('OPS', 'ADMIN')
   pauseMarket(@Param('id') id: string, @Req() req: any) {
@@ -39,6 +45,18 @@ export class VenueController {
     return this.matching.placeOrder({ ...body, marketId: id }, req.actor);
   }
 
+  @Get('markets/:id/orders')
+  @Roles('TRADER', 'MARKET_MAKER', 'ADMIN', 'AUDITOR')
+  listOrders(@Param('id') id: string) {
+    return this.matching.listOrders(id);
+  }
+
+  @Post('markets/:id/orders/:orderId/cancel')
+  @Roles('TRADER', 'MARKET_MAKER', 'ADMIN')
+  cancelMarketOrder(@Param('orderId') orderId: string) {
+    return this.matching.cancelOrder(orderId);
+  }
+
   @Post('orders/:id/cancel')
   @Roles('TRADER', 'MARKET_MAKER', 'ADMIN')
   cancelOrder(@Param('id') id: string) {
@@ -61,5 +79,17 @@ export class VenueController {
   @Roles('TRADER', 'MARKET_MAKER', 'ADMIN', 'AUDITOR')
   listTrades(@Param('id') id: string) {
     return this.matching.listTrades(id);
+  }
+
+  @Get('audit-log')
+  @Roles('AUDITOR', 'ADMIN', 'OPS')
+  listAuditLog() {
+    return this.matching.listAuditLog();
+  }
+
+  @Get('outbox-events')
+  @Roles('AUDITOR', 'ADMIN', 'OPS')
+  listOutboxEvents() {
+    return this.matching.listOutboxEvents();
   }
 }
